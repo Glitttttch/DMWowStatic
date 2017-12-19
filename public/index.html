@@ -1,0 +1,433 @@
+<html>
+	<head>
+		<script src="https://d3js.org/d3.v3.js"></script>
+		<link href="https://fonts.googleapis.com/css?family=Roboto:300,400,700" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css?family=Muli" rel="stylesheet">
+		<style>
+
+		.parent{
+			width:900px;
+			height:900px;
+			position:relative;
+			left:50%;
+			top:50%;
+			margin:-450px 0 0 -450px;
+		}
+
+		.stretcher{
+			width:100%;
+		}
+
+		.chartDiv{
+			height:850px;
+			background-color: #999;
+			border-width: 15px;
+			border-style: solid;
+  		border-color: #666 #808080 #D3D3D3 #808080;
+		}
+
+		.infoDiv{
+			height:50px;
+      text-align: center;
+			background-color: #999;
+      text-shadow: 2px 2px 3px #666;
+      font-size: 40px;
+			font-family: 'Muli', sans-serif;
+			border-width: 10px;
+			border-style: solid;
+  		border-color: #666 #808080 #D3D3D3 #808080;
+		}
+
+		.dateDiv{
+			position: absolute;
+      text-shadow: 1px 1px 3px #666;
+			margin: 10 0 0 30;
+			font-size: 20px;
+			font-family: 'Muli', sans-serif;
+		}
+
+		.startDiv{
+			position: absolute;
+      text-shadow: 1px 1px 3px #666;
+			margin: 15 0 0 660;
+			font-size: 20px;
+			font-family: 'Muli', sans-serif;
+		}
+
+		.stopDiv{
+			position: absolute;
+      text-shadow: 1px 1px 3px #666;
+			margin: 15 0 0 725;
+			font-size: 20px;
+			font-family: 'Muli', sans-serif;
+		}
+
+		.colorDiv{
+			position: absolute;
+			margin: 15 0 0 375;
+			font-size: 20px;
+			font-family: 'Muli', sans-serif;
+		}
+
+		.label {
+		  font-family: 'Muli', sans-serif;
+			text-shadow: 0px 2px 3px #555;
+		}
+
+		</style>
+	</head>
+
+	<body ng-app="circleApp" ng-controller="circleController">
+		<div class='parent'>
+			<div class='stretcher'>
+				<div class='infoDiv' id='infoDiv'>
+					<div class='trendDiv' id='trendDiv'></div>
+					<div class='dateDiv' id='dateDiv'></div>
+					<div class='startDiv' id='startDiv'></div>
+					<div class='stopDiv' id='stopDiv'></div>
+					<div class='colorDiv' id='colorDiv'></div>
+				</div>
+        <div class='chartDiv' id='chartDiv' circle-chart chart-data=""></div>
+			</div>
+		</div>
+	</body>
+
+<script>
+
+var width = 900, height = 850;
+var rect = [0, 0, width, height];
+var clock = new Date();
+var keyword = '#DEBATENIGHT';
+
+var force = d3.layout.force()
+      .size([width, height])
+      .gravity(0)
+      .charge(0);
+
+var nodes = [];
+
+var svg = d3.select("#chartDiv").append("svg")
+  .attr("width", width)
+  .attr("height", height)
+  .append("g");
+
+  svg.append("svg:rect")
+    .attr("width", rect[2] - rect[0])
+    .attr("height", rect[3] - rect[1])
+    .attr("x", rect[0])
+    .attr("y", rect[1])
+    .style("fill", "None");
+
+// var d3app = angular.module ("circleApp", []);
+//
+// d3app.controller("circleController", function($scope, $http, $interval){
+// 	$interval(function(){
+// 		$http.get("/api/wordCount")
+// 		.success(function (response) {
+//
+// 			$scope.words = response;
+//
+// 		});
+// 	}, 1000);
+// });
+//
+// d3app.directive("circleChart", function($parse, $window){
+// 	return{
+
+d3.json("debate2.json", function(error, data){
+  nodes = data.filter(function(d) {
+    return d.value >= 50;
+  });
+
+  var m = 15,
+      padding = 0,
+      maxSpeed = 2;
+
+  var radius = d3.scale.linear()
+            .domain([d3.min(nodes, function(d) { return d.value; }),
+              d3.max(nodes, function(d) { return d.value; })])
+            .range([30,120])
+
+    // console.log(d3.min(nodes, function(d) { return d.value; }));
+    // console.log(d3.max(nodes, function(d) { return d.value; }));
+
+    for (i in d3.range(nodes.length)) {
+  	    nodes[i].radius = radius(nodes[i].value),
+  	    nodes[i].x = rect[0] + (Math.random() * (rect[2] - rect[0])),
+  	    nodes[i].y = rect[1] + (Math.random() * (rect[3] - rect[1])),
+  	    nodes[i].speedX = 0,
+  	    nodes[i].speedY = -2
+    }
+
+    // console.log(nodes[0]);
+    // console.log(nodes);
+
+		var trendText = d3.select("#infoDiv").append("text")
+			.text(function(d){
+				return keyword;
+				})
+
+		var dateText = d3.select("#dateDiv").append("text")
+			.text(function(d){
+				var d_names = new Array("Sunday", "Monday", "Tuesday",
+				"Wednesday", "Thursday", "Friday", "Saturday");
+
+				var m_names = new Array("January", "February", "March",
+				"April", "May", "June", "July", "August", "September",
+				"October", "November", "December");
+
+				var d = new Date();
+				var curr_day = d.getDay();
+				var curr_date = d.getDate();
+				var sup = "";
+				if (curr_date == 1 || curr_date == 21 || curr_date ==31){sup = "st";}
+				else if (curr_date == 2 || curr_date == 22){sup = "nd";}
+				else if (curr_date == 3 || curr_date == 23){sup = "rd";}
+				else{sup = "th";}
+				var curr_month = d.getMonth();
+				var curr_year = d.getFullYear();
+				document.getElementById("dateDiv").innerHTML = m_names[curr_month] + " " + curr_date + "<SUP>"
+				+ sup + "</SUP> "  + curr_year;
+				})
+
+		var startText = d3.select("#startDiv").append("text")
+			.text(function(d){
+				Number.prototype.pad = function (len) {
+					return (new Array(len+1).join("0") + this).slice(-len);
+				}
+				var a_p = "";
+				var d = new Date();
+				var curr_hour = d.getHours();
+				if (curr_hour < 12) {a_p = "AM";}
+				else {a_p = "PM";}
+				if (curr_hour == 0) {curr_hour = 12;}
+				if (curr_hour > 12) {curr_hour = curr_hour - 12;}
+				var curr_min = d.getMinutes().pad(2);
+				curr_min = curr_min + "";
+				if (curr_min.length == 1) {curr_min = "0" + curr_min;}
+				var curr_sec = d.getSeconds().pad(2);
+				document.getElementById("startDiv").innerHTML = curr_hour + ":" + curr_min
+				+ " " + " - ";
+				})
+
+		setInterval(function(){
+			Number.prototype.pad = function (len) {
+				return (new Array(len+1).join("0") + this).slice(-len);
+			}
+			var a_p = "";
+			var d = new Date();
+			var curr_hour = d.getHours();
+			if (curr_hour < 12) {a_p = "AM";}
+			else{a_p = "PM";}
+			if (curr_hour == 0) {curr_hour = 12;}
+			if (curr_hour > 12) {curr_hour = curr_hour - 12;}
+			var curr_min = d.getMinutes().pad(2);
+			curr_min = curr_min + "";
+			if (curr_min.length == 1){curr_min = "0" + curr_min;}
+			var curr_sec = d.getSeconds().pad(2);
+			document.getElementById("stopDiv").innerHTML = curr_hour + ":" + curr_min
+				+ " " + a_p + " (EST)";
+	  	}, 1000);
+
+    var grads = svg.append("defs").selectAll("radialGradient")
+    	.data(nodes)
+    	.enter()
+    	.append("radialGradient")
+    	.attr("gradientUnits", "objectBoundingBox")
+    	.attr("cx", 0)
+    	.attr("cy", 0)
+    	.attr("r", "100%")
+    	.attr("id", function(d, i) { return "grad" + i; });
+
+    grads.append("stop")
+    	.attr("offset", "0%")
+    	.style("stop-color", "white");
+
+    grads.append("stop")
+    	.attr("offset", "100%")
+    	.style("stop-color",  "red")
+      .transition()
+      .duration(250000)
+      .delay(function(d, i) { return i * 16000; })
+      .style("stop-color",  "orange")
+      .transition()
+      .duration(250000)
+      .style("stop-color",  "gold")
+      .transition()
+      .duration(250000)
+      .style("stop-color",  "green")
+      .transition()
+      .duration(250000)
+      .style("stop-color",  "blue")
+      .transition()
+      .duration(250000)
+      .style("stop-color",  "indigo")
+      .transition()
+      .duration(250000)
+      .style("stop-color",  "violet")
+      .transition()
+      .duration(250000);
+
+
+			var gnodes = svg.selectAll('g.gnode')
+			 .data(nodes, function(d) { return d._id; })
+			 .enter()
+			 .append('g')
+			 .attr("cx", function(d) {return d.x;})
+			 .attr("cy", function(d) {return d.y;})
+			 .classed('gnode', true);
+
+			var circle = gnodes.append("circle")
+				.attr("class", "node")
+				.attr("r", function(d) {return d.radius;})
+        .attr('class', function(d) { return d.className; })
+        .style("fill", function(d, i) {
+      		return "url(#grad" + i + ")";
+      	})
+        .call(force.drag);
+
+				var labels = gnodes.append("text")
+						.attr('y', '0em')
+						.attr("class", "label")
+						.style("text-anchor", "middle")
+						.style("font-size", function(d, i) {
+			          var len = nodes[i]._id.substring(0, d.radius / 3).length;
+			          var size = d.radius/3;
+			          size *= 5 / len;
+			          size += 1;
+			          return Math.round(size)+'px';
+			      })
+						.attr('fill', '#fff')
+						.text(function(d, i) { return nodes[i]._id; });
+
+
+				var labels = gnodes.append("text")
+						.attr('y', '0.9em')
+						.attr("class", "label")
+						.style("text-anchor", "middle")
+						.style("font-size", function(d, i) {
+			          var len = nodes[i].value.length;
+			          var size = d.radius/3;
+			          size *= 2 / len;
+			          size += 1;
+			          return Math.round(size)+'px';
+			      })
+						.attr('fill', '#fff')
+						.text(function(d, i) { return nodes[i].value; });
+
+			// var labels = gnodes.append("text")
+			// 		.attr('y', '0em')
+			// 		.attr("class", "label")
+			// 		.style("text-anchor", "middle")
+			// 		.style("font-size", function(d) { return Math.round(d.radius/3 - 5)+'px'; })
+			// 		.attr('fill', '#fff')
+			// 		.text(function(d, i) { return nodes[i]._id; });
+			//
+			//
+			// var labels = gnodes.append("text")
+			// 		.attr('y', '0.9em')
+			// 		.attr("class", "label")
+			// 		.style("text-anchor", "middle")
+			// 		.style("font-size", function(d) { return Math.round(d.radius/3)+'px'; })
+			// 		.attr('fill', '#fff')
+			// 		.text(function(d, i) { return nodes[i].value; });
+
+    // var circle = svg.selectAll("circle")
+    //   .data(nodes, function(d) { return d._id; });
+
+			// function getSize(d) {
+			//   var bbox = this.getBBox(),
+			//       cbbox = this.parentNode.getBBox(),
+			//       scale = Math.min(cbbox.width/bbox.width, cbbox.height/bbox.height);
+			//   d.scale = scale;
+			// }
+
+      var duration = 300;
+      var delay = 0;
+
+      // //update
+      // circle.transition()
+      //   .duration(duration)
+      //   .delay(function(d, i) {delay = i * 7; return delay;})
+      //   .attr('r', function(d) { return d.radius;})
+
+      //enter
+      // circle.enter().append("circle")
+      //   .attr("r", function(d) {return d.radius;})
+      //   .attr("cx", function(d) {return d.x;})
+      //   .attr("cy", function(d) {return d.y;})
+      //   .attr('class', function(d) { return d.className; })
+      //   .style("fill", function(d, i) {
+      // 		return "url(#grad" + i + ")";
+      // 	})
+      //   .call(force.drag);
+
+
+      // circle.append("text")
+      //   .text(function(d, i) { return nodes[i]._id; });
+
+
+      force
+        .nodes(nodes)
+        .on("tick", tick)
+        .start();
+
+        var flag = false;
+
+        function tick(e) {
+          force.alpha(0.1)
+          gnodes
+            .each(gravity(e.alpha))
+            .each(collide(.5))
+          .attr("cx", function(d) { return d.x = Math.max(d.radius, Math.min((width - 28.5) - d.radius, d.x)); })
+          .attr("cy", function(d) { return d.y = Math.max(d.radius, Math.min((height - 5) - d.radius, d.y)); });
+
+					// gnodes.attr("transform", function(d) {
+		      //   return 'translate(' + [d.x, d.y] + ')';
+		    	// });
+					gnodes.attr("transform", function (d) {
+        		return "translate(" + d.x + "," + d.y + ")";
+    			});
+        }
+
+        function gravity(alpha) {
+          return function(d) {
+            d.y = d.y + (-1 * d.speedY * alpha);
+          };
+        }
+
+        function collide(alpha) {
+          var quadtree = d3.geom.quadtree(nodes);
+          return function(d) {
+            var r = d.radius + radius.domain()[1] + padding,
+              nx1 = d.x - r,
+              nx2 = d.x + r,
+              ny1 = d.y - r,
+              ny2 = d.y + r;
+            quadtree.visit(function(quad, x1, y1, x2, y2) {
+              if (quad.point && (quad.point !== d)) {
+                var x = d.x - quad.point.x,
+                  y = d.y - quad.point.y,
+                  l = Math.sqrt(x * x + y * y),
+                  r = d.radius + quad.point.radius + (d.color !== quad.point.color) * padding;
+                if (l < r) {
+                  l = (l - r) / l * alpha;
+                  d.x -= x *= l;
+                  d.y -= y *= l;
+                  quad.point.x += x;
+                  quad.point.y += y;
+                }
+              }
+              return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
+            });
+          };
+        }
+
+});
+
+//     });
+//   }, 1000)
+// })
+
+</script>
+</html>
